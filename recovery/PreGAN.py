@@ -23,7 +23,7 @@ class PreGANRecovery(Recovery):
         # Load encoder model
         self.model, self.optimizer, self.epoch, self.accuracy_list = \
             load_model(model_folder, f'{self.env_name}_{self.model_name}.ckpt', self.model_name)
-        # Train the model is not trained
+        # Train the model if not trained
         if self.epoch == -1: self.train_model()
         # Freeze encoder
         freeze(self.model)
