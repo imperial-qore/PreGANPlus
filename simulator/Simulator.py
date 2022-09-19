@@ -5,7 +5,7 @@ class Simulator():
 	# Total power in watt
 	# Total Router Bw
 	# Interval Time in seconds
-	def __init__(self, TotalPower, RouterBw, Scheduler, Recovery, ContainerLimit, IntervalTime, hostinit):
+	def __init__(self, TotalPower, RouterBw, Scheduler, Recovery, Stats, ContainerLimit, IntervalTime, hostinit):
 		self.totalpower = TotalPower
 		self.totalbw = RouterBw
 		self.hostlimit = len(hostinit)
@@ -19,7 +19,8 @@ class Simulator():
 		self.intervaltime = IntervalTime
 		self.interval = 0
 		self.inactiveContainers = []
-		self.stats = None
+		self.stats = Stats
+		self.stats.env = self
 		self.addHostlistInit(hostinit)
 
 	def addHostInit(self, IPS, RAM, Disk, Bw, Latency, Powermodel):

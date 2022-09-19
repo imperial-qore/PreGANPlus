@@ -8,7 +8,7 @@ from .PreGANSrc.src.constants import *
 from .PreGANSrc.src.utils import *
 from .PreGANSrc.src.train import *
 
-class PreGANRecovery(Recovery):
+class PreGANPlusRecovery(Recovery):
     def __init__(self, hosts, env, training = False):
         super().__init__()
         self.model_name = f'Attention_{hosts}'
@@ -17,23 +17,23 @@ class PreGANRecovery(Recovery):
         self.hosts = hosts
         self.env_name = 'simulator' if env == '' else 'framework'
         self.training = training
+        self.save_gan = True
         self.load_models()
 
     def load_models(self):
         # Load encoder model
         self.model, self.optimizer, self.epoch, self.accuracy_list = \
-            load_model(model_folder, f'{self.env_name}_{self.model_name}.ckpt', self.model_name)
-        # Train the model is not trained
+            load_model(model_plus_folder, f'{self.env_name}_{self.model_name}.ckpt', self.model_name)
+        # Train the model if not trained (offline training same as PreGAN)
         if self.epoch == -1: self.train_model()
         # Freeze encoder
         freeze(self.model)
         # Load generator and discriminator
         self.gen, self.disc, self.gopt, self.dopt, self.epoch, self.accuracy_list = \
-            load_gan(model_folder, f'{self.env_name}_{self.gen_name}.ckpt', f'{self.env_name}_{self.disc_name}.ckpt', self.gen_name, self.disc_name) 
+            load_gan(model_plus_folder, f'{self.env_name}_{self.gen_name}.ckpt', f'{self.env_name}_{self.disc_name}.ckpt', self.gen_name, self.disc_name) 
         self.gan_plotter = GAN_Plotter(self.env_name, self.gen_name, self.disc_name, self.training)
-        # Freeze GAN if not training
-        if not self.training: freeze(self.gen); freeze(self.disc)
-        if self.training:  self.ganloss = nn.BCELoss()
+        # GAN is always tuned
+        self.ganloss = nn.BCELoss()
         self.train_time_data = load_npyfile(os.path.join(data_folder, self.env_name), data_filename)
 
     def train_model(self):
@@ -46,7 +46,19 @@ class PreGANRecovery(Recovery):
             tqdm.write(f'Epoch {self.epoch},\tFactor = {factor},\tAScore = {anomaly_score},\tCScore = {class_score}')
             self.accuracy_list.append((loss, factor, anomaly_score, class_score))
             self.model_plotter.plot(self.accuracy_list, self.epoch)
-            save_model(model_folder, f'{self.env_name}_{self.model_name}.ckpt', self.model, self.optimizer, self.epoch, self.accuracy_list)
+            save_model(model_plus_folder, f'{self.env_name}_{self.model_name}.ckpt', self.model, self.optimizer, self.epoch, self.accuracy_list)
+
+    def tune_model(self):
+        folder = os.path.join(data_folder, self.env_name)
+        train_time_data, train_schedule_data, anomaly_data, class_data = load_dataset(folder, self.model)
+        # tune for a single epoch
+        train_time_data, train_schedule_data, anomaly_data, class_data = load_on_the_fly_dataset(self.model, train_time_data, self.env.stats)
+        loss, factor = backprop(self.epoch, self.model, train_time_data, train_schedule_data, anomaly_data, class_data, self.optimizer)
+        anomaly_score, class_score = accuracy(self.model, train_time_data, train_schedule_data, anomaly_data, class_data, self.model_plotter)
+        tqdm.write(f'Epoch {self.epoch},\tFactor = {factor},\tAScore = {anomaly_score},\tCScore = {class_score}')
+        self.accuracy_list.append((loss, factor, anomaly_score, class_score))
+        self.model_plotter.plot(self.accuracy_list, self.epoch)
+        save_model(model_plus_folder, f'{self.env_name}_{self.model_name}.ckpt', self.model, self.optimizer, self.epoch, self.accuracy_list)
 
     def train_gan(self, embedding, schedule_data):
         # Train discriminator
@@ -63,12 +75,13 @@ class PreGANRecovery(Recovery):
         true_probs = torch.tensor([0, 1], dtype=torch.double) # to enforce new schedule is better than original schedule
         gen_loss = self.ganloss(probs, true_probs)
         gen_loss.backward(); self.gopt.step()
-        # Append to accuracy list
-        self.epoch += 1; self.accuracy_list.append((gen_loss.item(), disc_loss.item()))
-        print(f'{color.HEADER}Epoch {self.epoch},\tGLoss = {gen_loss.item()},\tDLoss = {disc_loss.item()}{color.ENDC}')
-        self.gan_plotter.plot(self.accuracy_list, self.epoch, new_score, orig_score)
-        save_gan(model_folder, f'{self.env_name}_{self.gen_name}.ckpt', f'{self.env_name}_{self.disc_name}.ckpt', \
-                self.gen, self.disc, self.gopt, self.dopt, self.epoch, self.accuracy_list)
+        # Append to accuracy list and save model
+        if self.save_gan:            
+            self.epoch += 1; self.accuracy_list.append((gen_loss.item(), disc_loss.item()))
+            print(f'{color.HEADER}Epoch {self.epoch},\tGLoss = {gen_loss.item()},\tDLoss = {disc_loss.item()}{color.ENDC}')
+            self.gan_plotter.plot(self.accuracy_list, self.epoch, new_score, orig_score)
+            save_gan(model_plus_folder, f'{self.env_name}_{self.gen_name}.ckpt', f'{self.env_name}_{self.disc_name}.ckpt', \
+                    self.gen, self.disc, self.gopt, self.dopt, self.epoch, self.accuracy_list)
 
     def recover_decision(self, embedding, schedule_data, original_decision):
         new_schedule_data = self.gen(embedding, schedule_data)
@@ -120,8 +133,8 @@ class PreGANRecovery(Recovery):
         self.gan_plotter.update_class_detected(get_classes(embedding, self.model))
         embedding = torch.stack(embedding)
         # Pass through GAN
-        if self.training:
-            self.train_gan(embedding, schedule_data)
-            return original_decision
+        self.train_gan(embedding, schedule_data)
+        # Tune Model
+        self.tune_model()
         return self.recover_decision(embedding, schedule_data, original_decision)
 

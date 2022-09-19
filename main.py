@@ -53,6 +53,7 @@ from scheduler.HSOGOBI2 import HSOGOBI2Scheduler
 # Recovery imports
 from recovery.Recovery import Recovery
 from recovery.PreGAN import PreGANRecovery
+from recovery.PreGANPlus import PreGANPlusRecovery
 from recovery.PCFT import PCFTRecovery
 from recovery.DFTM import DFTMRecovery
 from recovery.ECLB import ECLBRecovery
@@ -111,17 +112,20 @@ def initalizeEnvironment(environment, logger):
 	# Initialize scheduler
 	''' Can be LRMMTR, RF, RL, RM, Random, RLRMMTR, TMCR, TMMR, TMMTR, GA, GOBI (arg = 'energy_latency_'+str(HOSTS)) '''
 	scheduler = GOBIScheduler('energy_latency_'+str(HOSTS))
-	
+
 	# Initialize recovery
 	''' Can be PreGANRecovery, PCFTRecovery, DFTMRecovery, ECLBRecovery, CMODLBRecovery '''
-	recovery = PreGANRecovery(HOSTS, environment, training = False)
+	recovery = PreGANPlusRecovery(HOSTS, environment, training = False)
+
+	# Initialize Stats
+	stats = Stats(env, workload, datacenter, scheduler)
 
 	# Initialize Environment
 	hostlist = datacenter.generateHosts()
 	if environment != '':
-		env = Framework(scheduler, recovery, CONTAINERS, INTERVAL_TIME, hostlist, db, environment, logger)
+		env = Framework(scheduler, recovery, stats, CONTAINERS, INTERVAL_TIME, hostlist, db, environment, logger)
 	else:
-		env = Simulator(TOTAL_POWER, ROUTER_BW, scheduler, recovery, CONTAINERS, INTERVAL_TIME, hostlist)
+		env = Simulator(TOTAL_POWER, ROUTER_BW, scheduler, recovery, stats, CONTAINERS, INTERVAL_TIME, hostlist)
 
 	# Execute first step
 	newcontainerinfos = workload.generateNewContainers(env.interval) # New containers info
@@ -136,8 +140,7 @@ def initalizeEnvironment(environment, logger):
 	print("Schedule:", env.getActiveContainerList())
 	printDecisionAndMigrations(decision, migrations)
 
-	# Initialize stats
-	stats = Stats(env, workload, datacenter, scheduler)
+	# Save stats
 	stats.saveStats(deployed, migrations, [], deployed, decision, schedulingTime)
 	return datacenter, workload, scheduler, recovery, env, stats
 

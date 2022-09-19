@@ -7,9 +7,8 @@ plt.style.use(['science'])
 plt.rcParams["text.usetex"] = False
 
 class Stats():
-	def __init__(self, Environment, WorkloadModel, Datacenter, Scheduler):
-		self.env = Environment
-		self.env.stats = self
+	def __init__(self, WorkloadModel, Datacenter, Scheduler):
+		self.env = None
 		self.workload = WorkloadModel
 		self.datacenter = Datacenter
 		self.scheduler = Scheduler

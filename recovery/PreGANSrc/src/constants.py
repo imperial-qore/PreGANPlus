@@ -1,5 +1,6 @@
 # Directory paths
 model_folder = 'recovery/PreGANSrc/checkpoints/'
+model_plus_folder = 'recovery/PreGANSrc/checkpointsplus/'
 data_folder = 'recovery/PreGANSrc/data/'
 plot_folder = 'recovery/PreGANSrc/plots'
 data_filename = 'time_series.npy'
