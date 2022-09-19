@@ -1,7 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn import TransformerEncoder, TransformerEncoderLayer
+from torch.nn import TransformerDecoder, TransformerDecoderLayer
 from .constants import *
+from .dlutils import *
 
 ## Simple Multi-Head Self-Attention Model
 class Attention_16(nn.Module):
@@ -172,3 +175,58 @@ class Disc_50(nn.Module):
 	def forward(self, o, n):
 		probs = self.probs(torch.cat((o.view(-1), n.view(-1))))
 		return probs
+
+
+############## PreGANPlus Models ##############
+
+# Transformer Model
+class Transformer_16(nn.Module):
+	def __init__(self):
+		super(Transformer_16, self).__init__()
+		self.name = 'Transformer_16'
+		self.lr = 0.0008
+		self.n_hosts = 16
+		feats = 3 * self.n_hosts
+		self.n_feats = 3 * self.n_hosts
+		self.n_window = 3 # w_size = 5
+		self.n_latent = 10
+		self.n_hidden = 16
+		self.n = self.n_window * self.n_feats + self.n_hosts * self.n_hosts
+		self.pos_encoder = PositionalEncoding(feats, 0.1, self.n_window)
+		encoder_layers = TransformerEncoderLayer(d_model=feats, nhead=feats, dropout=0.1)
+		self.encoder = TransformerEncoder(encoder_layers, 1)
+		a_decoder_layers = TransformerDecoderLayer(d_model=feats, nhead=feats, dropout=0.1)
+		self.anomaly_decoder = TransformerDecoder(a_decoder_layers, 1)
+		self.anomaly_decoder2 = nn.Sequential(
+			nn.Linear(self.n_feats * self.n_window, 2 * self.n_hosts), 
+		)
+		self.softm = nn.Softmax(dim=1)
+		p_decoder_layers = TransformerDecoderLayer(d_model=feats, nhead=feats, dropout=0.1)
+		self.prototype_decoder = TransformerDecoder(p_decoder_layers, 1)
+		self.prototype_decoder2 = nn.Sequential(
+			nn.Linear(self.n_feats * self.n_window, PROTO_DIM * self.n_hosts), 
+		)
+		self.prototype = [torch.rand(PROTO_DIM, requires_grad=False, dtype=torch.double) for _ in range(3)]
+
+	def encode(self, t, s):
+		t = t * math.sqrt(self.n_feats)
+		t = self.pos_encoder(t) # window size, batch size (1), feats (3 metrics * 16 hosts)
+		memory = self.encoder(t)	
+		return memory
+
+	def anomaly_decode(self, t, memory):
+		anomaly_scores = self.anomaly_decoder(t, memory)
+		anomaly_scores = self.anomaly_decoder2(anomaly_scores.view(-1)).view(-1, 1, 2)
+		return anomaly_scores
+
+	def prototype_decode(self, t, memory):
+		prototypes = self.prototype_decoder(t, memory)
+		prototypes = self.prototype_decoder2(prototypes.view(-1)).view(-1, PROTO_DIM)
+		return prototypes
+
+	def forward(self, t, s):
+		t = t.unsqueeze(dim=1)
+		memory = self.encode(t, s)
+		anomaly_scores = self.anomaly_decode(t, memory)
+		prototypes = self.prototype_decode(t, memory)
+		return anomaly_scores, prototypes

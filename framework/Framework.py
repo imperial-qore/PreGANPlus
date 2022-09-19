@@ -27,7 +27,7 @@ class Framework():
 		self.inactiveContainers = []
 		self.logger = logger
 		self.stats = Stats
-		self.stats.env = self
+		self.stats.setEnvironment(self)
 		self.environment = env
 		self.controller = RequestHandler(self.db, self)
 		self.addHostlistInit(hostinit)

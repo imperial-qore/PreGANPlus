@@ -11,7 +11,7 @@ from .PreGANSrc.src.train import *
 class PreGANPlusRecovery(Recovery):
     def __init__(self, hosts, env, training = False):
         super().__init__()
-        self.model_name = f'Attention_{hosts}'
+        self.model_name = f'Transformer_{hosts}'
         self.gen_name = f'Gen_{hosts}'
         self.disc_name = f'Disc_{hosts}'
         self.hosts = hosts

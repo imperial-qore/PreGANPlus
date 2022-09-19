@@ -118,7 +118,7 @@ def initalizeEnvironment(environment, logger):
 	recovery = PreGANPlusRecovery(HOSTS, environment, training = False)
 
 	# Initialize Stats
-	stats = Stats(env, workload, datacenter, scheduler)
+	stats = Stats(workload, datacenter, scheduler)
 
 	# Initialize Environment
 	hostlist = datacenter.generateHosts()

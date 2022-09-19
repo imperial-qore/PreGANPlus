@@ -20,7 +20,7 @@ class Simulator():
 		self.interval = 0
 		self.inactiveContainers = []
 		self.stats = Stats
-		self.stats.env = self
+		self.stats.setEnvironment(self)
 		self.addHostlistInit(hostinit)
 
 	def addHostInit(self, IPS, RAM, Disk, Bw, Latency, Powermodel):

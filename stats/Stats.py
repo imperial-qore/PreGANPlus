@@ -12,10 +12,13 @@ class Stats():
 		self.workload = WorkloadModel
 		self.datacenter = Datacenter
 		self.scheduler = Scheduler
+
+	def setEnvironment(self, env):
+		self.env = env
+		self.time_series = np.zeros((1,3 * self.env.hostlimit)) # 3 dims: cpu, ram-size, disk-size
+		self.schedule_series = np.zeros((1, self.env.containerlimit, self.env.hostlimit))
 		self.simulated_scheduler = GOBIScheduler('energy_latency_'+str(self.datacenter.num_hosts))
 		self.simulated_scheduler.env = self.env
-		self.time_series = np.zeros((1,3 * len(self.env.hostlist))) # 3 dims: cpu, ram-size, disk-size
-		self.schedule_series = np.zeros((1, len(self.env.containerlist), len(self.env.hostlist)))
 		self.initStats()
 
 	def initStats(self):	
