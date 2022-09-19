@@ -153,7 +153,7 @@ class GAN_Plotter():
 		self.prefix2 = self.prefix + '_Test_' + str(self.epoch) + '_'
 		self.epoch += 1
 		self.plot1('New Score Better', self.new_score_better)
-		if self.epoch  < 4: return
+		if self.epoch < 20: return
 		self.plot_heatmap('Anomaly Scores', 'Prediction', 'Class', np.array(self.anomaly_detected).reshape(1, -1), np.array(self.class_detected))
 		self.plot_heatmapc('Migrations', 'Migration', 'Hosts from Migration', np.array(self.migrating).reshape(1, -1), np.array(self.hosts_migrated))
 
@@ -166,7 +166,7 @@ class GAN_Plotter():
 		self.plot2('Generator Loss', 'Discriminator Loss', self.gloss_list, self.dloss_list)
 		self.plot3('Generator Loss', 'Discriminator Loss', 'New Schedule Better', self.gloss_list, self.dloss_list, self.new_score_better)
 		self.plot1('New Score Better', self.new_score_better)
-		if epoch < 4: return
+		if epoch < 20: return
 		self.plot_heatmap('Anomaly Scores', 'Prediction', 'Class', np.array(self.anomaly_detected).reshape(1, -1), np.array(self.class_detected))
 
 	def plot1(self, name1, data1, smooth = True, xlabel='Epoch'):

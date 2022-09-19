@@ -69,7 +69,8 @@ def anomaly_accuracy(source_anomaly, target_anomaly, model_plotter):
 		else:
 			if target_anomaly[i] == 1: fn += 1
 			else: fp += 1
-	model_plotter.update_anomaly(res_list, target_anomaly, correct/len(source_anomaly))
+	if model_plotter is not None:
+		model_plotter.update_anomaly(res_list, target_anomaly, correct/len(source_anomaly))
 	return correct/len(source_anomaly), tp, tn, fp, fn
 
 def class_accuracy(source_prototype, target_anomaly, target_class, model, model_plotter):
@@ -86,7 +87,8 @@ def class_accuracy(source_prototype, target_anomaly, target_class, model, model_
 			if positive_loss <= negative_loss[0] and positive_loss <= negative_loss[1]:
 				correct += 1
 			prototypes.append((sp, target_class[i]))
-	model_plotter.update_class(prototypes, correct/total)
+	if model_plotter is not None:
+		model_plotter.update_class(prototypes, correct/total)
 	return correct / total
 
 def accuracy(model, train_time_data, train_schedule_data, anomaly_data, class_data, model_plotter):
