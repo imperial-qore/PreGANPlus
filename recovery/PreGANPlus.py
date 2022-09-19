@@ -26,8 +26,8 @@ class PreGANPlusRecovery(Recovery):
             load_model(model_plus_folder, f'{self.env_name}_{self.model_name}.ckpt', self.model_name)
         # Train the model if not trained (offline training same as PreGAN)
         if self.epoch == -1: self.train_model()
-        # Freeze encoder
-        freeze(self.model)
+        # Reduce lr of encoder
+        # self.model.lr /= 5
         # Load generator and discriminator
         self.gen, self.disc, self.gopt, self.dopt, self.epoch, self.accuracy_list = \
             load_gan(model_plus_folder, f'{self.env_name}_{self.gen_name}.ckpt', f'{self.env_name}_{self.disc_name}.ckpt', self.gen_name, self.disc_name) 
@@ -49,16 +49,13 @@ class PreGANPlusRecovery(Recovery):
             save_model(model_plus_folder, f'{self.env_name}_{self.model_name}.ckpt', self.model, self.optimizer, self.epoch, self.accuracy_list)
 
     def tune_model(self):
-        folder = os.path.join(data_folder, self.env_name)
-        train_time_data, train_schedule_data, anomaly_data, class_data = load_dataset(folder, self.model)
         # tune for a single epoch
-        train_time_data, train_schedule_data, anomaly_data, class_data = load_on_the_fly_dataset(self.model, train_time_data, self.env.stats)
+        folder = os.path.join(data_folder, self.env_name)
+        train_time_data, train_schedule_data, anomaly_data, class_data = load_on_the_fly_dataset(self.model, folder, self.env.stats)
         loss, factor = backprop(self.epoch, self.model, train_time_data, train_schedule_data, anomaly_data, class_data, self.optimizer)
         anomaly_score, class_score = accuracy(self.model, train_time_data, train_schedule_data, anomaly_data, class_data, self.model_plotter)
         tqdm.write(f'Epoch {self.epoch},\tFactor = {factor},\tAScore = {anomaly_score},\tCScore = {class_score}')
         self.accuracy_list.append((loss, factor, anomaly_score, class_score))
-        self.model_plotter.plot(self.accuracy_list, self.epoch)
-        save_model(model_plus_folder, f'{self.env_name}_{self.model_name}.ckpt', self.model, self.optimizer, self.epoch, self.accuracy_list)
 
     def train_gan(self, embedding, schedule_data):
         # Train discriminator

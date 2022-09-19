@@ -37,10 +37,11 @@ def load_dataset(folder, model):
 	anomaly_data, class_data = form_test_dataset(time_data)
 	return train_time_data, train_schedule_data, anomaly_data, class_data
 
-def load_on_the_fly_dataset(model, train_time_data, stats):
-	time_data = stats.time_series
+def load_on_the_fly_dataset(model, folder, stats):
+	train_time_data = load_npyfile(folder, data_filename)
+	time_data = stats.time_series[-LATEST_WINDOW_SIZE:]
 	time_data = normalize_test_time_data(time_data, train_time_data)
-	train_schedule_data = stats.schedule_series
+	train_schedule_data = stats.schedule_series[-LATEST_WINDOW_SIZE:]
 	train_time_data = convert_to_windows(time_data, model)
 	anomaly_data, class_data = form_test_dataset(time_data)
 	return train_time_data, train_schedule_data, anomaly_data, class_data
