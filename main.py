@@ -114,7 +114,7 @@ def initalizeEnvironment(environment, logger):
 	scheduler = GOBIScheduler('energy_latency_'+str(HOSTS))
 
 	# Initialize recovery
-	''' Can be PreGANRecovery, PCFTRecovery, DFTMRecovery, ECLBRecovery, CMODLBRecovery '''
+	''' Can be PreGANPlusRecovery, PreGANRecovery, PCFTRecovery, DFTMRecovery, ECLBRecovery, CMODLBRecovery '''
 	recovery = PreGANPlusRecovery(HOSTS, environment, training = False)
 
 	# Initialize Stats
