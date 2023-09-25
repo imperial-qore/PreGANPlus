@@ -63,6 +63,7 @@ from recovery.CMODLB import CMODLBRecovery
 from stats.Stats import *
 from utils.Utils import *
 from pdb import set_trace as bp
+import torch
 
 usage = "usage: python main.py -e <environment> -m <mode> # empty environment run simulator"
 
@@ -115,7 +116,7 @@ def initalizeEnvironment(environment, logger):
 
 	# Initialize recovery
 	''' Can be PreGANPlusRecovery, PreGANRecovery, PCFTRecovery, DFTMRecovery, ECLBRecovery, CMODLBRecovery '''
-	recovery = PreGANPlusRecovery(HOSTS, environment, training = False)
+	recovery = PreGANPlusRecovery(HOSTS, environment, training = True)
 
 	# Initialize Stats
 	stats = Stats(workload, datacenter, scheduler)
@@ -128,6 +129,7 @@ def initalizeEnvironment(environment, logger):
 		env = Simulator(TOTAL_POWER, ROUTER_BW, scheduler, recovery, stats, CONTAINERS, INTERVAL_TIME, hostlist)
 
 	# Execute first step
+	torch.compile()
 	newcontainerinfos = workload.generateNewContainers(env.interval) # New containers info
 	deployed = env.addContainersInit(newcontainerinfos) # Deploy new containers and get container IDs
 	start = time()
@@ -183,7 +185,7 @@ def saveStats(stats, datacenter, workload, env, end=True):
 		saved_env, saved_workload, saved_datacenter, saved_scheduler, saved_sim_scheduler = stats.env, stats.workload, stats.datacenter, stats.scheduler, stats.simulated_scheduler
 		stats.env, stats.workload, stats.datacenter, stats.scheduler, stats.simulated_scheduler = None, None, None, None, None
 		with open(dirname + '/' + dirname.split('/')[1] +'.pk', 'wb') as handle:
-		    pickle.dump(stats, handle)
+			pickle.dump(stats, handle)
 		stats.env, stats.workload, stats.datacenter, stats.scheduler, stats.simulated_scheduler = saved_env, saved_workload, saved_datacenter, saved_scheduler, saved_sim_scheduler
 	if not end: return
 	stats.generateGraphs(dirname)
