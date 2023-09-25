@@ -253,7 +253,7 @@ class Transformer_16(nn.Module):
 	def __init__(self):
 		super(Transformer_16, self).__init__()
 		self.name = 'Transformer_16'
-		self.lr = 0.0008
+		self.lr = 0.0001
 		self.n_hosts = 16
 		feats = 3 * self.n_hosts
 		self.n_feats = 3 * self.n_hosts
